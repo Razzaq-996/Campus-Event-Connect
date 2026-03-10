@@ -12,13 +12,13 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [studentCredentials, setStudentCredentials] = useState({
-    roll_no: '',
-    password: '',
+    roll_no: 'S001',
+    password: 'password',
   });
 
   const [organizerCredentials, setOrganizerCredentials] = useState({
-    email: '',
-    password: '',
+    email: 'organizer@vnrvjiet.in',
+    password: 'password',
   });
 
   const handleStudentLogin = async (e: React.FormEvent) => {
