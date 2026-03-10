@@ -24,6 +24,8 @@ const generateId = () =>
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
 
+const STORAGE_KEY = 'campus-event-connect-db';
+
 const defaultDb: LocalDB = {
   students: [
     {
@@ -63,6 +65,30 @@ function clone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
 }
 
+function loadDb(): LocalDB {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return clone(defaultDb);
+    const parsed = JSON.parse(stored) as LocalDB;
+    return {
+      students: parsed.students ?? [],
+      organizers: parsed.organizers ?? [],
+      events: parsed.events ?? [],
+      registrations: parsed.registrations ?? [],
+    };
+  } catch {
+    return clone(defaultDb);
+  }
+}
+
+function saveDb(db: LocalDB) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  } catch {
+    // Ignore localStorage write errors.
+  }
+}
+
 function buildPredicate(type: string, column: string, value: any) {
   switch (type) {
     case 'eq':
@@ -99,7 +125,7 @@ function parseOrCondition(expression: string) {
 }
 
 function createLocalSupabaseClient() {
-  const db: LocalDB = clone(defaultDb);
+  const db: LocalDB = loadDb();
 
   function getTable(table: TableName) {
     return db[table] as InMemoryRow[];
@@ -189,6 +215,7 @@ function createLocalSupabaseClient() {
           tableData.push(newRow);
           return newRow;
         });
+        saveDb(db);
         return { data: inserted, error: null };
       },
       async update(updates: any) {
@@ -201,6 +228,7 @@ function createLocalSupabaseClient() {
           }
           return tableData[idx];
         });
+        saveDb(db);
         return { data: updated, error: null };
       },
       async delete() {
@@ -210,6 +238,7 @@ function createLocalSupabaseClient() {
           const idx = tableData.findIndex((r) => r.id === row.id);
           if (idx !== -1) tableData.splice(idx, 1);
         });
+        saveDb(db);
         return { data: results, error: null };
       },
       _execute() {
